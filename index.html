@@ -1,0 +1,370 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<title>Jeriel's - Commande</title>
+
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display&family=Poppins&display=swap" rel="stylesheet">
+
+<style>
+body {
+    font-family: Poppins, sans-serif;
+    margin: 0;
+    background: linear-gradient(to right, #dbe9f4, #fff);
+}
+
+/* HEADER */
+header {
+    background: url('jeriels.jpg') center/cover;
+    color: white;
+    text-align: center;
+    padding: 40px 20px;
+    position: relative;
+}
+
+header::after {
+    content: "";
+    position: absolute;
+    top:0; left:0; right:0; bottom:0;
+    background: rgba(0,0,0,0.5);
+}
+
+header * {
+    position: relative;
+}
+
+.logo {
+    font-family: "Playfair Display", serif;
+    font-size: 36px;
+}
+
+/* MENU */
+.menu {
+    max-width: 750px;
+    margin: auto;
+    padding: 10px;
+}
+
+.menu-item {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 10px;
+    align-items: center;
+    background: white;
+    padding: 12px;
+    border-radius: 15px;
+    margin-bottom: 12px;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.08);
+    transition: 0.2s;
+}
+
+.menu-item:hover {
+    transform: scale(1.02);
+}
+
+.menu-item.active {
+    border: 2px solid #c89b3c;
+}
+
+.price {
+    color: #c89b3c;
+    font-weight: bold;
+}
+
+.qty-control {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+button {
+    background: #c89b3c;
+    border: none;
+    color: white;
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    cursor: pointer;
+}
+
+/* 🔥 BOUTON PANIER AMÉLIORÉ */
+.cart-btn {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    background: #c89b3c;
+    color: white;
+    padding: 15px 22px;
+    border-radius: 50px;
+    cursor: pointer;
+    font-weight: bold;
+    font-size: 18px;
+    box-shadow: 0 8px 20px rgba(0,0,0,0.35);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    animation: pulse 1.5s infinite;
+    z-index: 999;
+}
+
+/* Badge compteur */
+.cart-btn span {
+    background: white;
+    color: #c89b3c;
+    font-weight: bold;
+    border-radius: 50%;
+    padding: 4px 8px;
+    font-size: 14px;
+}
+
+/* Animation douce */
+@keyframes pulse {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.08); }
+    100% { transform: scale(1); }
+}
+
+/* Effet clic */
+.cart-btn.bump {
+    animation: bump 0.3s ease;
+}
+
+@keyframes bump {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.2); }
+    100% { transform: scale(1); }
+}
+
+/* PANIER */
+.cart-panel {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background: white;
+    border-radius: 20px 20px 0 0;
+    padding: 20px;
+    max-height: 70%;
+    overflow-y: auto;
+    transform: translateY(100%);
+    transition: transform 0.3s ease;
+}
+
+.cart-panel.open {
+    transform: translateY(0);
+}
+
+.close-btn {
+    width: 100%;
+    margin-bottom: 10px;
+    background: #999;
+}
+
+/* WHATSAPP */
+.whatsapp-btn {
+    background: green;
+    width: 100%;
+    padding: 12px;
+    border-radius: 30px;
+    margin-top: 10px;
+    font-size: 16px;
+    font-weight: bold;
+}
+
+input, textarea {
+    width: 100%;
+    padding: 10px;
+    margin-top: 10px;
+    border-radius: 10px;
+    border: 1px solid #ccc;
+}
+</style>
+</head>
+
+<body>
+
+<header>
+    <div class="logo">Jeriel's</div>
+    <p>Impossible de résister !</p>
+</header>
+
+<section class="menu" id="menu"></section>
+
+<div class="cart-btn" onclick="toggleCart()">
+🛒 <span id="count">0</span>
+</div>
+
+<div class="cart-panel" id="cartPanel">
+    <button class="close-btn" onclick="toggleCart()">Fermer</button>
+
+    <h3>Votre commande</h3>
+    <div id="cartItems"></div>
+    <h3 id="total"></h3>
+
+    <input type="text" id="name" placeholder="Votre nom">
+    <input type="text" id="phone" placeholder="Votre numéro">
+    <input type="text" id="address" placeholder="Adresse">
+    <textarea id="note" placeholder="Note (optionnel)"></textarea>
+
+    <button class="whatsapp-btn" onclick="sendWhatsApp()">Commander via WhatsApp</button>
+</div>
+
+<script>
+
+const phoneNumber = "33662302334";
+
+const products = [
+    {name:"Crêpes nature", price:750},
+    {name:"Crêpes chocolat", price:1000},
+    {name:"Crêpes Nutella ⭐ Best-seller", price:2000},
+    {name:"Crêpes Cérélac", price:1500},
+    {name:"Crêpe salée jambon", price:1000},
+    {name:"Crêpe salée viande", price:1000},
+    {name:"Cake", price:1000}
+];
+
+let cart = {};
+
+function formatPrice(price){
+    return price.toLocaleString('fr-FR') + " FCFA";
+}
+
+function renderMenu(){
+    const menu = document.getElementById("menu");
+    menu.innerHTML = "";
+
+    products.forEach((p, i)=>{
+        menu.innerHTML += `
+        <div class="menu-item" id="item-${i}">
+            <div>
+                <strong>🥞 ${p.name}</strong><br>
+                <span class="price">${formatPrice(p.price)}</span>
+            </div>
+            <div class="qty-control">
+                <button onclick="updateQty(${i},-1)">-</button>
+                <span id="qty-${i}">0</span>
+                <button onclick="updateQty(${i},1)">+</button>
+            </div>
+        </div>`;
+    });
+}
+
+function animateCart(){
+    const btn = document.querySelector(".cart-btn");
+    btn.classList.add("bump");
+
+    setTimeout(()=>{
+        btn.classList.remove("bump");
+    }, 300);
+}
+
+function updateQty(i, change){
+    cart[i] = (cart[i] || 0) + change;
+    if(cart[i] < 0) cart[i] = 0;
+
+    document.getElementById("qty-"+i).innerText = cart[i];
+
+    const item = document.getElementById("item-"+i);
+    if(cart[i] > 0){
+        item.classList.add("active");
+    } else {
+        item.classList.remove("active");
+    }
+
+    if(navigator.vibrate){
+        navigator.vibrate(50);
+    }
+
+    animateCart();
+    updateCart();
+}
+
+function updateCart(){
+    let count=0, total=0, html="";
+
+    Object.keys(cart).forEach(i=>{
+        if(cart[i] > 0){
+            let p = products[i];
+            let sub = p.price * cart[i];
+
+            count += cart[i];
+            total += sub;
+
+            html += `<p>${p.name} x${cart[i]} = ${formatPrice(sub)}</p>`;
+        }
+    });
+
+    if(count === 0){
+        html = "<p>Votre panier est vide</p>";
+    }
+
+    document.getElementById("count").innerText = count;
+    document.getElementById("cartItems").innerHTML = html;
+    document.getElementById("total").innerText = "Total : " + formatPrice(total);
+}
+
+function toggleCart(){
+    document.getElementById("cartPanel").classList.toggle("open");
+}
+
+function sendWhatsApp(){
+
+    let name = document.getElementById("name").value.trim();
+    let phone = document.getElementById("phone").value.trim();
+    let address = document.getElementById("address").value.trim();
+    let note = document.getElementById("note").value.trim();
+
+    let hasItems = Object.values(cart).some(q => q > 0);
+
+    if(!hasItems){
+        alert("Votre panier est vide");
+        return;
+    }
+
+    if(!name || !phone || !address){
+        alert("Veuillez remplir toutes les informations");
+        return;
+    }
+
+    let msg = "🧾 *Nouvelle commande - Jeriel's*\n\n";
+    let total = 0;
+
+    Object.keys(cart).forEach(i=>{
+        if(cart[i] > 0){
+            let p = products[i];
+            let sub = p.price * cart[i];
+            total += sub;
+
+            msg += `🥞 ${p.name}\n`;
+            msg += `Quantité: ${cart[i]}\n`;
+            msg += `Sous-total: ${formatPrice(sub)}\n\n`;
+        }
+    });
+
+    msg += `💰 *Total: ${formatPrice(total)}*\n\n`;
+    msg += `👤 Nom: ${name}\n`;
+    msg += `📞 Téléphone: ${phone}\n`;
+    msg += `📍 Adresse: ${address}\n`;
+
+    if(note){
+        msg += `📝 Note: ${note}\n`;
+    }
+
+    window.open(`https://wa.me/${phoneNumber}?text=${encodeURIComponent(msg)}`);
+
+    cart = {};
+    renderMenu();
+    updateCart();
+    toggleCart();
+
+    alert("Commande envoyée !");
+}
+
+renderMenu();
+
+</script>
+
+</body>
+</html>
